@@ -22,3 +22,14 @@
 .message-body{min-width:0;max-width:100%}
 .message-row{min-width:0}
 @media(max-width:700px){.conversation{padding-left:16px;padding-right:16px}.message-content{font-size:15px}.message-content h2{font-size:1.25em}}
+
+/* V0.0.7: conversation list and mobile reliability */
+.conversation-history{display:flex;flex-direction:column;gap:5px;margin:8px 0 14px;overflow-y:auto;max-height:45vh}
+.history-item{display:block;width:100%;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border:1px solid transparent;background:transparent;color:#9299ad;border-radius:8px;padding:9px 10px;font-size:11px}
+.history-item:hover,.history-item.active{background:#1a1d2b;border-color:#ffffff12;color:#eeeaff}
+.message-content{min-width:0;overflow-wrap:anywhere}
+.message-content pre{position:relative;max-width:100%;overflow:auto;background:#10121c;border:1px solid #ffffff17;border-radius:10px;padding:14px;margin:12px 0;color:#d9d7f8}
+.message-content pre code{white-space:pre;font-size:12px;line-height:1.6}
+.code-copy-button{float:right;border:1px solid #ffffff20;background:#1b1d2b;color:#bcb1ff;border-radius:6px;padding:4px 8px;font-size:10px}
+.retry-button{margin-left:6px}
+@media(max-width:700px){.conversation-history{max-height:40vh}.history-item{padding:11px 10px;font-size:13px}}
