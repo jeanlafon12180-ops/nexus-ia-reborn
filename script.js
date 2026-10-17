@@ -5,29 +5,9 @@ const welcome = document.querySelector("#welcome");
 const messageList = document.querySelector("#message-list");
 const conversation = document.querySelector("#conversation");
 const sidebar = document.querySelector("#sidebar");
-const STORAGE_KEY = "nexus-ia-v001-messages";
+const STORAGE_KEY = "nexus-ia-v002-messages";
 let messages = [];
 let waiting = false;
-
-function demoAnswer(text) {
-  const q = text.toLowerCase();
-  if (/\b(bonjour|salut|hello|coucou)\b/.test(q)) {
-    return "Salut ! 👋 Bienvenue dans Nexus IA V0.0.1.\n\nJe peux déjà tester le parcours de discussion, mais je reste en mode démo : aucun modèle d'intelligence artificielle n'est connecté pour le moment.";
-  }
-  if (q.includes("html") || q.includes("code") || q.includes("program")) {
-    return "On peut organiser ton projet en étapes. 💻\n\n1. Définir le résultat attendu.\n2. Choisir les technologies adaptées.\n3. Écrire le code.\n4. Tester et corriger.\n\nCette réponse est prédéfinie : le vrai moteur IA reste à connecter.";
-  }
-  if (q.includes("intelligence artificielle") || q.includes(" ia ") || q === "ia") {
-    return "L'intelligence artificielle regroupe des méthodes permettant à un ordinateur d'effectuer des tâches comme analyser du texte, reconnaître des images ou générer du contenu.\n\nNexus IA n'est pas encore relié à un modèle de langage. Cette version sert à améliorer l'interface et la gestion des conversations.";
-  }
-  if (q.includes("merci")) {
-    return "Avec plaisir ! 😊 On construit Nexus IA progressivement. Petit rappel : cette réponse vient du mode démo, pas d'un modèle IA connecté.";
-  }
-  if (q.includes("qui es-tu") || q.includes("qui es tu") || q.includes("ton nom")) {
-    return "Je suis l'interface prototype de Nexus IA, version 0.0.1. Mon objectif est de devenir un assistant utile, mais mon moteur IA n'est pas encore branché.";
-  }
-  return "Message reçu !\n\nLa version 0.0.1 améliore l'expérience de conversation et peut conserver l'historique sur cet appareil. En revanche, mes réponses restent des exemples prédéfinis : un véritable modèle IA devra être connecté dans une prochaine version. 🚀";
-}
 
 function saveMessages() {
   try {
@@ -53,7 +33,7 @@ function renderMessage(message) {
   if (message.role === "assistant") {
     const tag = document.createElement("span");
     tag.className = "demo-tag";
-    tag.textContent = "MODE DÉMO";
+    tag.textContent = message.mode === "error" ? "INFO" : (message.mode === "legacy" ? "ANCIEN MESSAGE" : "IA");
     author.appendChild(tag);
   }
   const paragraph = document.createElement("p");
@@ -84,7 +64,10 @@ function renderMessage(message) {
 
 function renderAll() {
   messageList.replaceChildren();
-  messages.forEach(renderMessage);
+  messages.forEach((message) => {
+    if (message.role === "assistant" && !message.mode) message.mode = "legacy";
+    renderMessage(message);
+  });
   const hasMessages = messages.length > 0;
   welcome.hidden = hasMessages;
   messageList.hidden = !hasMessages;
@@ -92,26 +75,27 @@ function renderAll() {
   conversation.scrollTop = conversation.scrollHeight;
 }
 
-function addMessage(role, content) {
-  const message = { role, content, createdAt: new Date().toISOString() };
+function addMessage(role, content, mode = "ai") {
+  const message = { role, content, mode, createdAt: new Date().toISOString() };
   messages.push(message);
   renderMessage(message);
   saveMessages();
   welcome.hidden = true;
   messageList.hidden = false;
   conversation.classList.add("has-messages");
+  return message;
 }
 
 function showTyping() {
   const row = document.createElement("article");
   row.className = "message-row assistant typing-row";
   row.id = "typing-indicator";
-  row.innerHTML = '<div class="message-avatar assistant">n</div><div class="message-body"><div class="message-author">Nexus IA <span class="demo-tag">MODE DÉMO</span></div><p class="typing-dots" aria-label="Préparation de la réponse"><span></span><span></span><span></span></p></div>';
+  row.innerHTML = '<div class="message-avatar assistant">n</div><div class="message-body"><div class="message-author">Nexus IA <span class="demo-tag">RÉFLEXION</span></div><p class="typing-dots" aria-label="Préparation de la réponse"><span></span><span></span><span></span></p></div>';
   messageList.appendChild(row);
   conversation.scrollTop = conversation.scrollHeight;
 }
 
-function sendMessage(value) {
+async function sendMessage(value) {
   const text = (value === undefined ? input.value : value).trim();
   if (!text || waiting) return;
   waiting = true;
@@ -120,14 +104,34 @@ function sendMessage(value) {
   input.style.height = "auto";
   sendButton.disabled = true;
   showTyping();
-  window.setTimeout(() => {
+  conversation.scrollTop = conversation.scrollHeight;
+
+  try {
+    const history = messages
+      .filter((message) => message.role === "user" || message.role === "assistant")
+      .slice(-12)
+      .map(({ role, content }) => ({ role, content }));
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: history })
+    });
+    const data = await response.json().catch(() => ({}));
     document.querySelector("#typing-indicator")?.remove();
-    addMessage("assistant", demoAnswer(text));
+    if (!response.ok) {
+      addMessage("assistant", data.error || "Le service IA est momentanément indisponible. Réessaie dans un instant.", "error");
+    } else {
+      addMessage("assistant", data.answer, "ai");
+    }
+  } catch (error) {
+    document.querySelector("#typing-indicator")?.remove();
+    addMessage("assistant", "Je n'arrive pas à joindre le serveur Nexus IA. Vérifie ta connexion puis réessaie. Si le problème continue, regarde l'état du déploiement Vercel.", "error");
+  } finally {
     waiting = false;
     sendButton.disabled = !input.value.trim();
     conversation.scrollTop = conversation.scrollHeight;
     input.focus();
-  }, 450);
+  }
 }
 
 function resetChat() {
@@ -146,8 +150,8 @@ function exportConversation() {
     window.alert("Il n'y a pas encore de conversation à exporter.");
     return;
   }
-  const content = messages.map((message) => (message.role === "user" ? "Vous" : "Nexus IA (mode démo)") + ":\n" + message.content).join("\n\n---\n\n");
-  const blob = new Blob(["Nexus IA V0.0.1 — Historique de conversation\n\n" + content], { type: "text/plain;charset=utf-8" });
+  const content = messages.map((message) => (message.role === "user" ? "Vous" : "Nexus IA") + ":\n" + message.content).join("\n\n---\n\n");
+  const blob = new Blob(["Nexus IA V0.0.2 — Historique de conversation\n\n" + content], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
