@@ -221,7 +221,6 @@ async function sendMessage(value, options = {}) {
   try {
     const history = messages
       .filter((message) => (message.role === "user" || message.role === "assistant") && message.mode !== "error")
-      .slice(-16)
       .map(({ role, content }) => ({ role, content }));
     const response = await fetch("/api/chat", {
       method: "POST",
@@ -232,8 +231,10 @@ async function sendMessage(value, options = {}) {
     document.querySelector("#typing-indicator")?.remove();
     if (!response.ok) {
       addMessage("assistant", data.error || "Le service IA est momentanément indisponible. Réessaie dans un instant.", "error");
+    } else if (typeof data.answer === "string" && data.answer.trim()) {
+      addMessage("assistant", data.answer.trim(), "ai");
     } else {
-      addMessage("assistant", data.answer, "ai");
+      addMessage("assistant", "Le serveur a répondu, mais le contenu reçu est invalide. Réessaie dans un instant.", "error");
     }
   } catch (error) {
     document.querySelector("#typing-indicator")?.remove();
