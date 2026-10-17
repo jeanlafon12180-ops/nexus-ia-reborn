@@ -138,6 +138,17 @@ function renderMessage(message) {
       window.setTimeout(() => { copy.textContent = "Copier la réponse"; }, 1600);
     });
     actions.appendChild(copy);
+    if (message.mode === "error") {
+      const retry = document.createElement("button");
+      retry.className = "copy-button";
+      retry.type = "button";
+      retry.textContent = "Réessayer";
+      retry.addEventListener("click", () => {
+        const lastUser = [...messages].reverse().find((item) => item.role === "user");
+        if (lastUser) sendMessage(lastUser.content);
+      });
+      actions.appendChild(retry);
+    }
     body.appendChild(actions);
   }
   row.append(avatar, body);
