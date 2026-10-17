@@ -5,7 +5,8 @@ const welcome = document.querySelector("#welcome");
 const messageList = document.querySelector("#message-list");
 const conversation = document.querySelector("#conversation");
 const sidebar = document.querySelector("#sidebar");
-const STORAGE_KEY = "nexus-ia-v002-messages";
+const STORAGE_KEY = "nexus-ia-v003-messages";
+const PREVIOUS_STORAGE_KEY = "nexus-ia-v002-messages";
 const LEGACY_STORAGE_KEY = "nexus-ia-v001-messages";
 let messages = [];
 let waiting = false;
@@ -16,6 +17,62 @@ function saveMessages() {
   } catch (error) {
     console.warn("Impossible de sauvegarder la conversation sur cet appareil.", error);
   }
+}
+
+
+function renderInline(parent, text) {
+  const pattern = /(\*\*[^*]+\*\*|\*[^*]+\*|\`[^\`]+\`|\\\\\([^)]*\\\\\))/g;
+  let last = 0;
+  for (const match of text.matchAll(pattern)) {
+    if (match.index > last) parent.appendChild(document.createTextNode(text.slice(last, match.index)));
+    const token = match[0];
+    let node;
+    if (token.startsWith("**")) { node = document.createElement("strong"); node.textContent = token.slice(2, -2); }
+    else if (token.startsWith("*")) { node = document.createElement("em"); node.textContent = token.slice(1, -1); }
+    else if (token.startsWith("`")) { node = document.createElement("code"); node.textContent = token.slice(1, -1); }
+    else { node = document.createElement("span"); node.className = "math-inline"; node.textContent = token.slice(2, -2); }
+    parent.appendChild(node);
+    last = match.index + token.length;
+  }
+  if (last < text.length) parent.appendChild(document.createTextNode(text.slice(last)));
+}
+
+function renderMarkdown(container, source) {
+  const lines = String(source || "").replace(/\r\n?/g, "\n").split("\n");
+  let paragraph = [];
+  let list = null;
+  const flushParagraph = () => {
+    if (!paragraph.length) return;
+    const p = document.createElement("p");
+    paragraph.join(" ").split(/  $/).forEach((part) => renderInline(p, part));
+    container.appendChild(p);
+    paragraph = [];
+  };
+  const flushList = () => { if (list) { container.appendChild(list); list = null; } };
+  for (const line of lines) {
+    const heading = line.match(/^(#{1,3})\s+(.+)$/);
+    const bullet = line.match(/^\s*[-*]\s+(.+)$/);
+    const numbered = line.match(/^\s*\d+[.)]\s+(.+)$/);
+    if (!line.trim()) { flushParagraph(); flushList(); continue; }
+    if (heading) {
+      flushParagraph(); flushList();
+      const h = document.createElement("h" + Math.min(heading[1].length + 1, 4));
+      renderInline(h, heading[2]); container.appendChild(h); continue;
+    }
+    if (bullet || numbered) {
+      flushParagraph();
+      const tag = numbered ? "ol" : "ul";
+      if (!list || list.tagName.toLowerCase() !== tag) { flushList(); list = document.createElement(tag); }
+      const li = document.createElement("li"); renderInline(li, (bullet || numbered)[1]); list.appendChild(li); continue;
+    }
+    if (/^>\s?/.test(line)) {
+      flushParagraph(); flushList();
+      const quote = document.createElement("blockquote"); renderInline(quote, line.replace(/^>\s?/, "")); container.appendChild(quote); continue;
+    }
+    flushList();
+    paragraph.push(line);
+  }
+  flushParagraph(); flushList();
 }
 
 function renderMessage(message) {
@@ -37,9 +94,11 @@ function renderMessage(message) {
     tag.textContent = message.mode === "error" ? "INFO" : (message.mode === "legacy" ? "ANCIEN MESSAGE" : "IA");
     author.appendChild(tag);
   }
-  const paragraph = document.createElement("p");
-  paragraph.textContent = message.content;
-  body.append(author, paragraph);
+  const content = document.createElement("div");
+  content.className = "message-content";
+  if (message.role === "assistant" && message.mode !== "error") renderMarkdown(content, message.content);
+  else content.textContent = message.content;
+  body.append(author, content);
   if (message.role === "assistant") {
     const actions = document.createElement("div");
     actions.className = "message-actions";
@@ -152,7 +211,7 @@ function exportConversation() {
     return;
   }
   const content = messages.map((message) => (message.role === "user" ? "Vous" : "Nexus IA") + ":\n" + message.content).join("\n\n---\n\n");
-  const blob = new Blob(["Nexus IA V0.0.2 — Historique de conversation\n\n" + content], { type: "text/plain;charset=utf-8" });
+  const blob = new Blob(["Nexus IA V0.0.4 — Historique de conversation\n\n" + content], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
