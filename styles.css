@@ -41,3 +41,7 @@
 .copy-button{cursor:pointer}
 button:focus-visible,textarea:focus-visible{outline:2px solid #a78bfa;outline-offset:3px}
 button:disabled{opacity:.55;cursor:not-allowed}
+
+/* V0.0.9: keyboard focus and reduced-motion accessibility */
+.history-item:focus-visible,.copy-button:focus-visible,.code-copy-button:focus-visible{outline:2px solid #a78bfa;outline-offset:2px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
