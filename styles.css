@@ -33,3 +33,11 @@
 .code-copy-button{float:right;border:1px solid #ffffff20;background:#1b1d2b;color:#bcb1ff;border-radius:6px;padding:4px 8px;font-size:10px}
 .retry-button{margin-left:6px}
 @media(max-width:700px){.conversation-history{max-height:40vh}.history-item{padding:11px 10px;font-size:13px}}
+
+/* V0.0.8: code blocks, regenerate actions, and accessibility polish */
+.message-content pre{display:flex;flex-direction:column;gap:10px;overflow-x:auto;white-space:pre-wrap;overflow-wrap:normal}
+.message-content pre code{display:block;white-space:pre;overflow-x:auto;max-width:100%;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.code-copy-button{align-self:flex-end;cursor:pointer;min-height:30px}
+.copy-button{cursor:pointer}
+button:focus-visible,textarea:focus-visible{outline:2px solid #a78bfa;outline-offset:3px}
+button:disabled{opacity:.55;cursor:not-allowed}
