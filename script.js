@@ -5,9 +5,10 @@ const welcome = document.querySelector("#welcome");
 const messageList = document.querySelector("#message-list");
 const conversation = document.querySelector("#conversation");
 const sidebar = document.querySelector("#sidebar");
-const STORAGE_KEY = "nexus-ia-v008-chats";
-const CURRENT_VERSION = "Nexus IA V0.0.8";
-const OLD_STORAGE_KEYS = ["nexus-ia-v005-messages", "nexus-ia-v003-messages", "nexus-ia-v004-messages", "nexus-ia-v002-messages", "nexus-ia-v001-messages"];
+const STORAGE_KEY = "nexus-ia-v009-chats";
+const CURRENT_VERSION = "Nexus IA V0.0.9";
+// Read all previous storage formats; never delete old keys during migration.
+const OLD_STORAGE_KEYS = ["nexus-ia-v008-chats", "nexus-ia-v007-chats", "nexus-ia-v005-messages", "nexus-ia-v003-messages", "nexus-ia-v004-messages", "nexus-ia-v002-messages", "nexus-ia-v001-messages"];
 let chats = [];
 let currentChatId = null;
 const historyList = document.querySelector("#conversation-history");
@@ -137,8 +138,16 @@ function renderMessage(message) {
       retry.type = "button";
       retry.textContent = "Réessayer";
       retry.addEventListener("click", () => {
-        const lastUser = [...messages].reverse().find((item) => item.role === "user");
-        if (lastUser) sendMessage(lastUser.content);
+        if (waiting) return;
+        const errorIndex = messages.indexOf(message);
+        let userIndex = errorIndex - 1;
+        while (userIndex >= 0 && messages[userIndex].role !== "user") userIndex--;
+        if (userIndex < 0) return;
+        const prompt = messages[userIndex].content;
+        messages = messages.slice(0, errorIndex);
+        saveMessages();
+        renderAll();
+        sendMessage(prompt, { reuseLastUser: true });
       });
       actions.appendChild(retry);
     }
@@ -268,7 +277,11 @@ try {
     for (const key of OLD_STORAGE_KEYS) { try { const data = JSON.parse(localStorage.getItem(key) || "null"); if (Array.isArray(data) && data.length) { legacy = data; break; } } catch {} }
     chats = [{ id: "chat-migrated-" + Date.now(), title: (legacy.find((m) => m.role === "user") || {}).content?.slice(0, 42) || "Conversation précédente", messages: legacy, updatedAt: new Date().toISOString() }]; currentChatId = chats[0].id;
   }
-  const active = chats.find((chat) => chat.id === currentChatId) || chats[0]; currentChatId = active.id; messages = active.messages || [];
+  const active = chats.find((chat) => chat.id === currentChatId) || chats[0];
+  currentChatId = active.id;
+  messages = Array.isArray(active.messages) ? active.messages : [];
+  // Write the migrated copy under the new key without deleting source keys.
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ chats, currentChatId }));
 } catch { chats = [{ id: "chat-" + Date.now(), title: "Nouvelle conversation", messages: [], updatedAt: new Date().toISOString() }]; currentChatId = chats[0].id; messages = []; }
 renderConversationHistory();
 renderAll();
