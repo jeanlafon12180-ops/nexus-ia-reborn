@@ -6,6 +6,7 @@ const messageList = document.querySelector("#message-list");
 const conversation = document.querySelector("#conversation");
 const sidebar = document.querySelector("#sidebar");
 const STORAGE_KEY = "nexus-ia-v002-messages";
+const LEGACY_STORAGE_KEY = "nexus-ia-v001-messages";
 let messages = [];
 let waiting = false;
 
@@ -161,14 +162,38 @@ function exportConversation() {
 }
 
 try {
-  const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+  const current = localStorage.getItem(STORAGE_KEY);
+  const stored = JSON.parse(current || localStorage.getItem(LEGACY_STORAGE_KEY) || "[]");
   if (Array.isArray(stored)) {
     messages = stored.filter((item) => item && (item.role === "user" || item.role === "assistant") && typeof item.content === "string");
   }
+  if (!current && messages.length) saveMessages();
 } catch {
   messages = [];
 }
 renderAll();
+
+async function refreshAIStatus() {
+  const label = document.querySelector(".online-label");
+  const dot = document.querySelector(".online-dot");
+  try {
+    const response = await fetch("/api/chat", { method: "GET" });
+    const data = await response.json();
+    if (data.configured) {
+      label.textContent = "IA configurée";
+      dot.style.background = "#74d9b6";
+      dot.title = "Le serveur indique que le moteur IA est configuré.";
+    } else {
+      label.textContent = "IA à configurer";
+      dot.style.background = "#e6b86b";
+      dot.title = "Ajoute GROQ_API_KEY dans les variables d’environnement Vercel pour activer les réponses IA.";
+    }
+  } catch {
+    label.textContent = "Serveur indisponible";
+    dot.style.background = "#e68181";
+  }
+}
+refreshAIStatus();
 
 composer.addEventListener("submit", (event) => {
   event.preventDefault();
