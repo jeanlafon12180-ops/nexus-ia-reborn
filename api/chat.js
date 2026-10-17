@@ -23,10 +23,17 @@ export default async function handler(req, res) {
   }
 
   const body = req.body || {};
+  const contentLength = Number(req.headers?.["content-length"] || 0);
+  if (contentLength > 100_000) {
+    return res.status(413).json({ code: "REQUEST_TOO_LARGE", error: "La conversation est trop volumineuse. Réduis la longueur du message puis réessaie." });
+  }
   if (!Array.isArray(body.messages)) {
     return res.status(400).json({ code: "INVALID_MESSAGES", error: "Format de conversation invalide." });
   }
 
+  if (body.messages.length > 100) {
+    return res.status(400).json({ code: "TOO_MANY_MESSAGES", error: "Cette conversation contient trop de messages à traiter. Commence une nouvelle conversation puis réessaie." });
+  }
   const messages = body.messages
     .filter((m) => m && ["user", "assistant"].includes(m.role) && typeof m.content === "string")
     .slice(-16)
