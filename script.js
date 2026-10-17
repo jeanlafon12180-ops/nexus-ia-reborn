@@ -7,8 +7,8 @@ const conversation = document.querySelector("#conversation");
 const sidebar = document.querySelector("#sidebar");
 const STORAGE_KEY = "nexus-ia-v005-messages";
 const PREVIOUS_STORAGE_KEY = "nexus-ia-v003-messages";
+const V004_STORAGE_KEY = "nexus-ia-v004-messages";
 const V002_STORAGE_KEY = "nexus-ia-v002-messages";
-const PREVIOUS_STORAGE_KEY = "nexus-ia-v002-messages";
 const LEGACY_STORAGE_KEY = "nexus-ia-v001-messages";
 let messages = [];
 let waiting = false;
@@ -213,7 +213,7 @@ function exportConversation() {
     return;
   }
   const content = messages.map((message) => (message.role === "user" ? "Vous" : "Nexus IA") + ":\n" + message.content).join("\n\n---\n\n");
-  const blob = new Blob(["Nexus IA V0.0.5 — Historique de conversation\n\n" + content], { type: "text/plain;charset=utf-8" });
+  const blob = new Blob(["Nexus IA V0.0.6 — Historique de conversation\n\n" + content], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -224,7 +224,7 @@ function exportConversation() {
 
 try {
   const current = localStorage.getItem(STORAGE_KEY);
-  const stored = JSON.parse(current || localStorage.getItem(PREVIOUS_STORAGE_KEY) || localStorage.getItem(V002_STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY) || "[]");
+  const stored = JSON.parse(current || localStorage.getItem(PREVIOUS_STORAGE_KEY) || localStorage.getItem(V004_STORAGE_KEY) || localStorage.getItem(V002_STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY) || "[]");
   if (Array.isArray(stored)) {
     messages = stored.filter((item) => item && (item.role === "user" || item.role === "assistant") && typeof item.content === "string");
   }
@@ -285,10 +285,16 @@ document.querySelector("#brand-home").addEventListener("click", (event) => {
   sidebar.classList.remove("sidebar-open");
   renderAll();
 });
-document.querySelector("#mobile-menu").addEventListener("click", () => {
-  sidebar.classList.toggle("sidebar-open");
+const mobileMenu = document.querySelector("#mobile-menu");
+function setMobileMenu(open) {
+  sidebar.classList.toggle("sidebar-open", open);
+  mobileMenu.setAttribute("aria-expanded", String(open));
+  mobileMenu.setAttribute("aria-label", open ? "Fermer le menu" : "Ouvrir le menu");
+}
+mobileMenu.addEventListener("click", () => {
+  setMobileMenu(!sidebar.classList.contains("sidebar-open"));
 });
 document.querySelector("#conversation").addEventListener("click", (event) => {
-  if (window.innerWidth <= 700 && !sidebar.contains(event.target)) sidebar.classList.remove("sidebar-open");
+  if (window.innerWidth <= 700 && !sidebar.contains(event.target)) setMobileMenu(false);
 });
 document.querySelector("#export-chat").addEventListener("click", exportConversation);
