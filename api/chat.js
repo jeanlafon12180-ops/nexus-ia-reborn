@@ -29,7 +29,7 @@ export default async function handler(req, res) {
 
   const messages = body.messages
     .filter((m) => m && ["user", "assistant"].includes(m.role) && typeof m.content === "string")
-    .slice(-12)
+    .slice(-16)
     .map((m) => ({ role: m.role, content: m.content.trim().slice(0, 4000) }))
     .filter((m) => m.content.length > 0);
 
@@ -53,12 +53,12 @@ export default async function handler(req, res) {
         messages: [
           {
             role: "system",
-            content: "Tu es Nexus IA, un assistant utile, honnête et pédagogique. Réponds en français sauf si l'utilisateur demande une autre langue. Explique clairement, structure les réponses et adapte le niveau à la question. Pour le code, donne des exemples sûrs et explique où les placer. N'invente pas de faits et signale tes incertitudes. Tu n'as pas accès au Web en direct sauf si un outil te le permet, ce qui n'est pas le cas ici. Ne prétends pas avoir exécuté du code ni vérifié un site."
+            content: "Tu es Nexus IA, un assistant fiable, clair et pédagogique. Réponds dans la langue de l’utilisateur, en français par défaut. Utilise le contexte précédent pour comprendre les pronoms et les questions de suivi. Pour les sujets complexes, structure la réponse avec des titres, étapes et exemples concrets. Pour les mathématiques, montre les étapes et vérifie le résultat. Pour le code, fournis du code complet quand c’est utile, indique les fichiers concernés et explique comment tester. Si une information manque, pose une question ciblée au lieu d’inventer. Distingue les faits certains des hypothèses. Tu n’as pas accès au Web en direct dans cette conversation et ne dois pas prétendre avoir consulté un site, exécuté du code ou vérifié un déploiement. Sois honnête sur les limites, évite les répétitions et adapte la longueur à la demande."
           },
           ...messages
         ],
-        temperature: 0.6,
-        max_completion_tokens: 1200
+        temperature: 0.5,
+        max_completion_tokens: 1800
       })
     });
 
