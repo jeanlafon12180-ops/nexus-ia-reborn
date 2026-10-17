@@ -6,7 +6,7 @@ const messageList = document.querySelector("#message-list");
 const conversation = document.querySelector("#conversation");
 const sidebar = document.querySelector("#sidebar");
 const STORAGE_KEY = "nexus-ia-v010-chats";
-const CURRENT_VERSION = "Nexus IA V0.1.0";
+const CURRENT_VERSION = "Nexus IA V0.1.1";
 // Read all previous storage formats; never delete old keys during migration.
 const OLD_STORAGE_KEYS = ["nexus-ia-v009-chats", "nexus-ia-v008-chats", "nexus-ia-v007-chats", "nexus-ia-v005-messages", "nexus-ia-v003-messages", "nexus-ia-v004-messages", "nexus-ia-v002-messages", "nexus-ia-v001-messages"];
 const historySearch = document.querySelector("#history-search");
@@ -291,13 +291,22 @@ async function importAllHistory(file) {
     if (!Array.isArray(incoming) || !incoming.every((chat) => chat && typeof chat.id === "string" && Array.isArray(chat.messages))) {
       throw new Error("Format invalide");
     }
-    const existingIds = new Set(chats.map((chat) => chat.id));
-    const imported = incoming.map((chat) => ({
-      ...chat,
-      id: existingIds.has(chat.id) ? "import-" + Date.now() + "-" + chat.id : chat.id,
-      title: String(chat.title || "Conversation importée").slice(0, 100),
-      messages: chat.messages.filter((m) => m && ["user", "assistant"].includes(m.role) && typeof m.content === "string")
-    }));
+    const usedIds = new Set(chats.map((chat) => chat.id));
+    const importStamp = Date.now();
+    const imported = incoming.map((chat, index) => {
+      const originalId = chat.id;
+      let safeId = originalId;
+      if (usedIds.has(safeId)) safeId = "import-" + importStamp + "-" + index + "-" + originalId;
+      while (usedIds.has(safeId)) safeId = "import-" + importStamp + "-" + index + "-" + Math.random().toString(36).slice(2, 8);
+      usedIds.add(safeId);
+      return {
+        ...chat,
+        id: safeId,
+        title: String(chat.title || "Conversation importée").slice(0, 100),
+        messages: chat.messages.filter((m) => m && ["user", "assistant"].includes(m.role) && typeof m.content === "string")
+          .map((m) => ({ role: m.role, content: m.content, ...(typeof m.mode === "string" ? { mode: m.mode } : {}), ...(typeof m.createdAt === "string" ? { createdAt: m.createdAt } : {}) }))
+      };
+    });
     if (!imported.length) throw new Error("Aucune conversation");
     if (!window.confirm("Importer " + imported.length + " conversation(s) sans effacer l’historique actuel ?")) return;
     chats = [...chats, ...imported];
