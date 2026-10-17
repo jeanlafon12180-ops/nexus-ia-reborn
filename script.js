@@ -67,16 +67,16 @@ function renderMarkdown(container, source) {
   const flushList = () => { if (list) { container.appendChild(list); list = null; } };
   const flushCode = () => { const pre = document.createElement("pre"); const code = document.createElement("code"); if (codeLanguage) code.className = "language-" + codeLanguage; code.textContent = codeLines.join("\n"); const copyCode = document.createElement("button"); copyCode.type = "button"; copyCode.className = "code-copy-button"; copyCode.textContent = "Copier le code"; copyCode.addEventListener("click", async () => { try { await navigator.clipboard.writeText(code.textContent); copyCode.textContent = "Copié ✓"; } catch { copyCode.textContent = "Copie indisponible"; } window.setTimeout(() => { copyCode.textContent = "Copier le code"; }, 1600); }); pre.append(copyCode, code); container.appendChild(pre); codeLines = null; codeLanguage = ""; };
   for (const line of lines) {
-    const fence = line.match(/^`{3,}([\\w+-]*)\\s*$/);
+    const fence = line.match(/^`{3,}([\w+-]*)\s*$/);
     if (codeLines !== null) { if (fence) { flushCode(); continue; } codeLines.push(line); continue; }
     if (fence) { flushParagraph(); flushList(); codeLines = []; codeLanguage = fence[1] || ""; continue; }
-    const heading = line.match(/^(#{1,3})\\s+(.+)$/);
-    const bullet = line.match(/^\\s*[-*]\\s+(.+)$/);
-    const numbered = line.match(/^\\s*\\d+[.)]\\s+(.+)$/);
+    const heading = line.match(/^(#{1,3})\s+(.+)$/);
+    const bullet = line.match(/^\s*[-*]\s+(.+)$/);
+    const numbered = line.match(/^\s*\d+[.)]\s+(.+)$/);
     if (!line.trim()) { flushParagraph(); flushList(); continue; }
     if (heading) { flushParagraph(); flushList(); const h = document.createElement("h" + Math.min(heading[1].length + 1, 4)); renderInline(h, heading[2]); container.appendChild(h); continue; }
     if (bullet || numbered) { flushParagraph(); const tag = numbered ? "ol" : "ul"; if (!list || list.tagName.toLowerCase() !== tag) { flushList(); list = document.createElement(tag); } const li = document.createElement("li"); renderInline(li, (bullet || numbered)[1]); list.appendChild(li); continue; }
-    if (/^>\\s?/.test(line)) { flushParagraph(); flushList(); const quote = document.createElement("blockquote"); renderInline(quote, line.replace(/^>\\s?/, "")); container.appendChild(quote); continue; }
+    if (/^>\s?/.test(line)) { flushParagraph(); flushList(); const quote = document.createElement("blockquote"); renderInline(quote, line.replace(/^>\s?/, "")); container.appendChild(quote); continue; }
     flushList(); paragraph.push(line);
   }
   if (codeLines !== null) flushCode(); flushParagraph(); flushList();
