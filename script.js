@@ -5,7 +5,8 @@ const welcome = document.querySelector("#welcome");
 const messageList = document.querySelector("#message-list");
 const conversation = document.querySelector("#conversation");
 const sidebar = document.querySelector("#sidebar");
-const STORAGE_KEY = "nexus-ia-v007-chats";
+const STORAGE_KEY = "nexus-ia-v008-chats";
+const CURRENT_VERSION = "Nexus IA V0.0.8";
 const OLD_STORAGE_KEYS = ["nexus-ia-v005-messages", "nexus-ia-v003-messages", "nexus-ia-v004-messages", "nexus-ia-v002-messages", "nexus-ia-v001-messages"];
 let chats = [];
 let currentChatId = null;
@@ -63,6 +64,8 @@ function renderMarkdown(container, source) {
   const lines = String(source || "").replace(/\r\n?/g, "\n").split("\n");
   let paragraph = [];
   let list = null;
+  let codeLines = null;
+  let codeLanguage = "";
   const flushParagraph = () => {
     if (!paragraph.length) return;
     const p = document.createElement("p");
@@ -94,6 +97,7 @@ function renderMarkdown(container, source) {
     flushList();
     paragraph.push(line);
   }
+  if (codeLines !== null) paragraph.push("```" + codeLanguage, ...codeLines);
   flushParagraph(); flushList();
 }
 
@@ -138,6 +142,14 @@ function renderMessage(message) {
       window.setTimeout(() => { copy.textContent = "Copier la réponse"; }, 1600);
     });
     actions.appendChild(copy);
+    if (message.mode === "ai" && messages[messages.length - 1] === message) {
+      const regenerate = document.createElement("button");
+      regenerate.className = "copy-button";
+      regenerate.type = "button";
+      regenerate.textContent = "Régénérer";
+      regenerate.addEventListener("click", () => regenerateLastAnswer());
+      actions.appendChild(regenerate);
+    }
     if (message.mode === "error") {
       const retry = document.createElement("button");
       retry.className = "copy-button";
@@ -188,11 +200,25 @@ function showTyping() {
   conversation.scrollTop = conversation.scrollHeight;
 }
 
-async function sendMessage(value) {
+async function regenerateLastAnswer() {
+  if (waiting) return;
+  const lastAssistantIndex = [...messages].map((m) => m.role).lastIndexOf("assistant");
+  if (lastAssistantIndex < 0) return;
+  let userIndex = lastAssistantIndex - 1;
+  while (userIndex >= 0 && messages[userIndex].role !== "user") userIndex--;
+  if (userIndex < 0) return;
+  const prompt = messages[userIndex].content;
+  messages = messages.slice(0, lastAssistantIndex);
+  saveMessages();
+  renderAll();
+  await sendMessage(prompt, { reuseLastUser: true });
+}
+
+async function sendMessage(value, options = {}) {
   const text = (value === undefined ? input.value : value).trim();
   if (!text || waiting) return;
   waiting = true;
-  addMessage("user", text);
+  if (!options.reuseLastUser) addMessage("user", text);
   input.value = "";
   input.style.height = "auto";
   sendButton.disabled = true;
@@ -244,7 +270,7 @@ function exportConversation() {
     return;
   }
   const content = messages.map((message) => (message.role === "user" ? "Vous" : "Nexus IA") + ":\n" + message.content).join("\n\n---\n\n");
-  const blob = new Blob(["Nexus IA V0.0.7 — Historique de conversation\n\n" + content], { type: "text/plain;charset=utf-8" });
+  const blob = new Blob([CURRENT_VERSION + " — Historique de conversation\n\n" + content], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
