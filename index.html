@@ -4,8 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0b0d14">
-  <meta name="description" content="Nexus IA V0.0.5 — un prototype d'assistant en évolution.">
-  <title>Nexus IA V0.0.5 — Votre espace d'idées</title>
+  <meta name="description" content="Nexus IA V0.0.6 — un assistant IA en évolution.">
+  <title>Nexus IA V0.0.6 — Votre espace d'idées</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="styles.css">
   <script src="script.js" defer></script>
 </head>
@@ -19,14 +20,14 @@
       <div class="side-label">ESPACE DE TRAVAIL</div>
       <button class="side-item active" id="assistant-tab"><span>◈</span> Assistant</button>
       <div class="sidebar-bottom">
-        <div class="version-card"><span class="status-dot"></span><div><strong>Nexus IA V0.0.5</strong><small>Prototype en développement</small></div></div>
+        <div class="version-card"><span class="status-dot"></span><div><strong>Nexus IA V0.0.6</strong><small>Prototype en développement</small></div></div>
         <div class="sidebar-foot">Conçu avec curiosité <span>✦</span></div>
       </div>
     </aside>
     <section class="main-panel">
       <header class="topbar">
-        <button class="mobile-menu icon-button" id="mobile-menu" aria-label="Ouvrir le menu">☰</button>
-        <div class="topbar-title">Assistant <span class="beta-pill">V0.0.5 · BÊTA</span></div>
+        <button class="mobile-menu icon-button" id="mobile-menu" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="sidebar">☰</button>
+        <div class="topbar-title">Assistant <span class="beta-pill">V0.0.6 · BÊTA</span></div>
         <div class="topbar-right"><span class="online-dot"></span><span class="online-label">IA à configurer</span><button class="icon-button export-button" id="export-chat" aria-label="Exporter la conversation" title="Exporter la conversation">↓</button><button class="icon-button reset-button" id="reset-chat" aria-label="Nouvelle conversation" title="Nouvelle conversation">＋</button></div>
       </header>
       <div class="conversation" id="conversation" aria-live="polite">
@@ -41,7 +42,7 @@
             <button class="starter-card" data-prompt="Donne-moi trois idées originales pour un projet numérique."><span class="starter-icon">↗</span><span class="starter-title">Trouver des idées</span><span class="starter-arrow">↗</span><span class="starter-text">Explorer des possibilités et des projets.</span></button>
             <button class="starter-card" data-prompt="Aide-moi à décomposer un problème difficile en étapes simples."><span class="starter-icon">∑</span><span class="starter-title">Résoudre un problème</span><span class="starter-arrow">↗</span><span class="starter-text">Avancer étape par étape, sans se perdre.</span></button>
           </div>
-          <div class="prototype-note"><span>i</span><p><strong>Version 0.0.3.</strong> L'historique est conservé sur cet appareil et peut être exporté. Le moteur améliore le suivi du contexte, les explications et les réponses de code. L'historique local des versions précédentes est conservé.</p></div>
+          <div class="prototype-note"><span>i</span><p><strong>Version 0.0.6.</strong> L'historique est conservé sur cet appareil et peut être exporté. Le moteur améliore le suivi du contexte, les explications et les réponses de code. L'historique local des versions précédentes est conservé.</p></div>
         </div>
         <div class="message-list" id="message-list" hidden></div>
       </div>
@@ -50,7 +51,7 @@
           <textarea id="message-input" placeholder="Écris ton idée ici..." rows="1" aria-label="Votre message"></textarea>
           <div class="composer-bottom"><span class="composer-hint"><span>↵</span> Entrée pour envoyer · Maj + Entrée pour une ligne</span><button class="send-button" type="submit" aria-label="Envoyer le message" disabled>↑</button></div>
         </form>
-        <p class="disclaimer">Nexus IA V0.0.5 · Nexus IA V0.0.5 · Réponses mises en forme automatiquement.</p>
+        <p class="disclaimer">Nexus IA V0.0.6 · Nexus IA V0.0.6 · Réponses mises en forme automatiquement.</p>
       </div>
     </section>
   </main>
