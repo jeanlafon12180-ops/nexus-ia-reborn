@@ -5,20 +5,40 @@ const welcome = document.querySelector("#welcome");
 const messageList = document.querySelector("#message-list");
 const conversation = document.querySelector("#conversation");
 const sidebar = document.querySelector("#sidebar");
-const STORAGE_KEY = "nexus-ia-v005-messages";
-const PREVIOUS_STORAGE_KEY = "nexus-ia-v003-messages";
-const V004_STORAGE_KEY = "nexus-ia-v004-messages";
-const V002_STORAGE_KEY = "nexus-ia-v002-messages";
-const LEGACY_STORAGE_KEY = "nexus-ia-v001-messages";
+const STORAGE_KEY = "nexus-ia-v007-chats";
+const OLD_STORAGE_KEYS = ["nexus-ia-v005-messages", "nexus-ia-v003-messages", "nexus-ia-v004-messages", "nexus-ia-v002-messages", "nexus-ia-v001-messages"];
+let chats = [];
+let currentChatId = null;
+const historyList = document.querySelector("#conversation-history");
 let messages = [];
 let waiting = false;
 
 function saveMessages() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
-  } catch (error) {
-    console.warn("Impossible de sauvegarder la conversation sur cet appareil.", error);
-  }
+    const current = chats.find((chat) => chat.id === currentChatId);
+    if (current) { current.messages = messages; current.updatedAt = new Date().toISOString();
+      const lastUser = [...messages].reverse().find((m) => m.role === "user");
+      if (lastUser) current.title = lastUser.content.slice(0, 42); }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ chats, currentChatId }));
+    renderConversationHistory();
+  } catch (error) { console.warn("Impossible de sauvegarder l’historique.", error); }
+}
+function renderConversationHistory() {
+  if (!historyList) return;
+  historyList.replaceChildren();
+  chats.slice().reverse().forEach((chat) => {
+    const button = document.createElement("button"); button.type = "button";
+    button.className = "history-item" + (chat.id === currentChatId ? " active" : "");
+    button.textContent = chat.title || "Nouvelle conversation";
+    button.addEventListener("click", () => { if (waiting) return; currentChatId = chat.id; messages = chat.messages || []; saveMessages(); renderAll(); setMobileMenu(false); });
+    historyList.appendChild(button);
+  });
+}
+function createConversation() {
+  if (waiting) return;
+  const chat = { id: "chat-" + Date.now(), title: "Nouvelle conversation", messages: [], updatedAt: new Date().toISOString() };
+  chats.push(chat); currentChatId = chat.id; messages = []; saveMessages(); renderAll();
+  input.value = ""; sendButton.disabled = true; input.style.height = "auto"; setMobileMenu(false);
 }
 
 
@@ -213,7 +233,7 @@ function exportConversation() {
     return;
   }
   const content = messages.map((message) => (message.role === "user" ? "Vous" : "Nexus IA") + ":\n" + message.content).join("\n\n---\n\n");
-  const blob = new Blob(["Nexus IA V0.0.6 — Historique de conversation\n\n" + content], { type: "text/plain;charset=utf-8" });
+  const blob = new Blob(["Nexus IA V0.0.7 — Historique de conversation\n\n" + content], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -223,15 +243,16 @@ function exportConversation() {
 }
 
 try {
-  const current = localStorage.getItem(STORAGE_KEY);
-  const stored = JSON.parse(current || localStorage.getItem(PREVIOUS_STORAGE_KEY) || localStorage.getItem(V004_STORAGE_KEY) || localStorage.getItem(V002_STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY) || "[]");
-  if (Array.isArray(stored)) {
-    messages = stored.filter((item) => item && (item.role === "user" || item.role === "assistant") && typeof item.content === "string");
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) { const saved = JSON.parse(raw); if (Array.isArray(saved.chats)) { chats = saved.chats; currentChatId = saved.currentChatId; } }
+  if (!chats.length) {
+    let legacy = [];
+    for (const key of OLD_STORAGE_KEYS) { try { const data = JSON.parse(localStorage.getItem(key) || "null"); if (Array.isArray(data) && data.length) { legacy = data; break; } } catch {} }
+    chats = [{ id: "chat-migrated-" + Date.now(), title: (legacy.find((m) => m.role === "user") || {}).content?.slice(0, 42) || "Conversation précédente", messages: legacy, updatedAt: new Date().toISOString() }]; currentChatId = chats[0].id;
   }
-  if (!current && messages.length) saveMessages();
-} catch {
-  messages = [];
-}
+  const active = chats.find((chat) => chat.id === currentChatId) || chats[0]; currentChatId = active.id; messages = active.messages || [];
+} catch { chats = [{ id: "chat-" + Date.now(), title: "Nouvelle conversation", messages: [], updatedAt: new Date().toISOString() }]; currentChatId = chats[0].id; messages = []; }
+renderConversationHistory();
 renderAll();
 
 async function refreshAIStatus() {
@@ -274,8 +295,8 @@ input.addEventListener("keydown", (event) => {
 document.querySelectorAll("[data-prompt]").forEach((button) => {
   button.addEventListener("click", () => sendMessage(button.dataset.prompt));
 });
-document.querySelector("#new-chat").addEventListener("click", resetChat);
-document.querySelector("#reset-chat").addEventListener("click", resetChat);
+document.querySelector("#new-chat").addEventListener("click", createConversation);
+document.querySelector("#reset-chat").addEventListener("click", createConversation);
 document.querySelector("#assistant-tab").addEventListener("click", () => {
   sidebar.classList.remove("sidebar-open");
   renderAll();
