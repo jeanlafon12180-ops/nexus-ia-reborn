@@ -5,10 +5,12 @@ const welcome = document.querySelector("#welcome");
 const messageList = document.querySelector("#message-list");
 const conversation = document.querySelector("#conversation");
 const sidebar = document.querySelector("#sidebar");
-const STORAGE_KEY = "nexus-ia-v009-chats";
-const CURRENT_VERSION = "Nexus IA V0.0.9";
+const STORAGE_KEY = "nexus-ia-v010-chats";
+const CURRENT_VERSION = "Nexus IA V0.1.0";
 // Read all previous storage formats; never delete old keys during migration.
-const OLD_STORAGE_KEYS = ["nexus-ia-v008-chats", "nexus-ia-v007-chats", "nexus-ia-v005-messages", "nexus-ia-v003-messages", "nexus-ia-v004-messages", "nexus-ia-v002-messages", "nexus-ia-v001-messages"];
+const OLD_STORAGE_KEYS = ["nexus-ia-v009-chats", "nexus-ia-v008-chats", "nexus-ia-v007-chats", "nexus-ia-v005-messages", "nexus-ia-v003-messages", "nexus-ia-v004-messages", "nexus-ia-v002-messages", "nexus-ia-v001-messages"];
+const historySearch = document.querySelector("#history-search");
+const importInput = document.querySelector("#import-history");
 let chats = [];
 let currentChatId = null;
 const historyList = document.querySelector("#conversation-history");
@@ -28,7 +30,8 @@ function saveMessages() {
 function renderConversationHistory() {
   if (!historyList) return;
   historyList.replaceChildren();
-  chats.slice().reverse().forEach((chat) => {
+  const query = (historySearch?.value || "").trim().toLocaleLowerCase("fr");
+  chats.slice().reverse().filter((chat) => !query || String(chat.title || "").toLocaleLowerCase("fr").includes(query) || (chat.messages || []).some((m) => String(m.content || "").toLocaleLowerCase("fr").includes(query))).forEach((chat) => {
     const button = document.createElement("button"); button.type = "button";
     button.className = "history-item" + (chat.id === currentChatId ? " active" : "");
     button.textContent = chat.title || "Nouvelle conversation";
@@ -269,20 +272,78 @@ function exportConversation() {
   URL.revokeObjectURL(url);
 }
 
+function exportAllHistory() {
+  const backup = { app: "Nexus IA", version: CURRENT_VERSION, exportedAt: new Date().toISOString(), chats, currentChatId };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "nexus-ia-sauvegarde.json";
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function importAllHistory(file) {
+  if (!file) return;
+  try {
+    const backup = JSON.parse(await file.text());
+    const incoming = Array.isArray(backup) ? backup : backup.chats;
+    if (!Array.isArray(incoming) || !incoming.every((chat) => chat && typeof chat.id === "string" && Array.isArray(chat.messages))) {
+      throw new Error("Format invalide");
+    }
+    const existingIds = new Set(chats.map((chat) => chat.id));
+    const imported = incoming.map((chat) => ({
+      ...chat,
+      id: existingIds.has(chat.id) ? "import-" + Date.now() + "-" + chat.id : chat.id,
+      title: String(chat.title || "Conversation importée").slice(0, 100),
+      messages: chat.messages.filter((m) => m && ["user", "assistant"].includes(m.role) && typeof m.content === "string")
+    }));
+    if (!imported.length) throw new Error("Aucune conversation");
+    if (!window.confirm("Importer " + imported.length + " conversation(s) sans effacer l’historique actuel ?")) return;
+    chats = [...chats, ...imported];
+    currentChatId = imported[imported.length - 1].id;
+    messages = chats.find((chat) => chat.id === currentChatId).messages;
+    saveMessages();
+    renderAll();
+    window.alert("Import terminé : " + imported.length + " conversation(s) ajoutée(s).");
+  } catch {
+    window.alert("Impossible d’importer ce fichier. Choisis une sauvegarde JSON Nexus IA valide.");
+  } finally {
+    if (importInput) importInput.value = "";
+  }
+}
+
 try {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (raw) { const saved = JSON.parse(raw); if (Array.isArray(saved.chats)) { chats = saved.chats; currentChatId = saved.currentChatId; } }
   if (!chats.length) {
-    let legacy = [];
-    for (const key of OLD_STORAGE_KEYS) { try { const data = JSON.parse(localStorage.getItem(key) || "null"); if (Array.isArray(data) && data.length) { legacy = data; break; } } catch {} }
-    chats = [{ id: "chat-migrated-" + Date.now(), title: (legacy.find((m) => m.role === "user") || {}).content?.slice(0, 42) || "Conversation précédente", messages: legacy, updatedAt: new Date().toISOString() }]; currentChatId = chats[0].id;
+    let legacyChats = null;
+    let legacyMessages = null;
+    for (const key of OLD_STORAGE_KEYS) {
+      try {
+        const data = JSON.parse(localStorage.getItem(key) || "null");
+        if (Array.isArray(data) && data.length) { legacyMessages = data; break; }
+        if (data && Array.isArray(data.chats) && data.chats.length) { legacyChats = data.chats; currentChatId = data.currentChatId; break; }
+      } catch {}
+    }
+    if (legacyChats) {
+      chats = legacyChats.filter((chat) => chat && typeof chat.id === "string" && Array.isArray(chat.messages));
+    } else {
+      const legacy = legacyMessages || [];
+      chats = [{ id: "chat-migrated-" + Date.now(), title: (legacy.find((m) => m.role === "user") || {}).content?.slice(0, 42) || "Conversation précédente", messages: legacy, updatedAt: new Date().toISOString() }];
+      currentChatId = chats[0].id;
+    }
   }
   const active = chats.find((chat) => chat.id === currentChatId) || chats[0];
   currentChatId = active.id;
   messages = Array.isArray(active.messages) ? active.messages : [];
-  // Write the migrated copy under the new key without deleting source keys.
+  // Keep every old storage key intact; the new format is an additional copy.
   localStorage.setItem(STORAGE_KEY, JSON.stringify({ chats, currentChatId }));
-} catch { chats = [{ id: "chat-" + Date.now(), title: "Nouvelle conversation", messages: [], updatedAt: new Date().toISOString() }]; currentChatId = chats[0].id; messages = []; }
+} catch {
+  chats = [{ id: "chat-" + Date.now(), title: "Nouvelle conversation", messages: [], updatedAt: new Date().toISOString() }];
+  currentChatId = chats[0].id;
+  messages = [];
+}
 renderConversationHistory();
 renderAll();
 
@@ -350,3 +411,7 @@ document.querySelector("#conversation").addEventListener("click", (event) => {
   if (window.innerWidth <= 700 && !sidebar.contains(event.target)) setMobileMenu(false);
 });
 document.querySelector("#export-chat").addEventListener("click", exportConversation);
+document.querySelector("#export-all-history")?.addEventListener("click", exportAllHistory);
+document.querySelector("#import-history-button")?.addEventListener("click", () => importInput?.click());
+importInput?.addEventListener("change", () => importAllHistory(importInput.files?.[0]));
+historySearch?.addEventListener("input", renderConversationHistory);
