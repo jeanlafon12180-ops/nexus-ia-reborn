@@ -6,7 +6,7 @@ const messageList = document.querySelector("#message-list");
 const conversation = document.querySelector("#conversation");
 const sidebar = document.querySelector("#sidebar");
 const STORAGE_KEY = "nexus-ia-v010-chats";
-const CURRENT_VERSION = "Nexus IA V0.1.1";
+const CURRENT_VERSION = "Nexus IA V0.1.2";
 // Read all previous storage formats; never delete old keys during migration.
 const OLD_STORAGE_KEYS = ["nexus-ia-v009-chats", "nexus-ia-v008-chats", "nexus-ia-v007-chats", "nexus-ia-v005-messages", "nexus-ia-v003-messages", "nexus-ia-v004-messages", "nexus-ia-v002-messages", "nexus-ia-v001-messages"];
 const historySearch = document.querySelector("#history-search");
@@ -48,7 +48,7 @@ function createConversation() {
 
 
 function renderInline(parent, text) {
-  const pattern = /(\*\*[^*]+\*\*|\*[^*]+\*|\`[^\`]+\`|\\\\\([^)]*\\\\\))/g;
+  const pattern = /(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\\\([^)]*\\\))/g;
   let last = 0;
   for (const match of text.matchAll(pattern)) {
     if (match.index > last) parent.appendChild(document.createTextNode(text.slice(last, match.index)));
