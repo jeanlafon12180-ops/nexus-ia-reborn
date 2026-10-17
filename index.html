@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0d14">
+  <meta name="description" content="Nexus IA V0 — premier prototype de votre espace d'idées.">
+  <title>Nexus IA — Votre espace d'idées</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <main class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="#" id="brand-home" aria-label="Nexus IA accueil">
+        <span class="brand-mark">n</span><span class="brand-name">nexus<span>ia</span></span>
+      </a>
+      <button class="new-chat" id="new-chat"><span class="plus">＋</span> Nouvelle conversation</button>
+      <div class="side-label">ESPACE DE TRAVAIL</div>
+      <button class="side-item active" id="assistant-tab"><span>◈</span> Assistant</button>
+      <div class="sidebar-bottom">
+        <div class="version-card"><span class="status-dot"></span><div><strong>Nexus IA V0</strong><small>Prototype en développement</small></div></div>
+        <div class="sidebar-foot">Conçu avec curiosité <span>✦</span></div>
+      </div>
+    </aside>
+    <section class="main-panel">
+      <header class="topbar">
+        <button class="mobile-menu icon-button" id="mobile-menu" aria-label="Ouvrir le menu">☰</button>
+        <div class="topbar-title">Assistant <span class="beta-pill">V0 · BÊTA</span></div>
+        <div class="topbar-right"><span class="online-dot"></span><span class="online-label">Prototype local</span><button class="icon-button reset-button" id="reset-chat" aria-label="Nouvelle conversation" title="Nouvelle conversation">＋</button></div>
+      </header>
+      <div class="conversation" id="conversation" aria-live="polite">
+        <div class="welcome-wrap" id="welcome">
+          <div class="welcome-orb"><div class="orb-core">n</div><span class="orb-spark spark-one">✦</span><span class="orb-spark spark-two">✧</span></div>
+          <div class="eyebrow"><span class="eyebrow-line"></span> TON ESPACE D'IDÉES <span class="eyebrow-line"></span></div>
+          <h1>On imagine quoi<br><span>aujourd'hui ?</span></h1>
+          <p class="welcome-subtitle">Un nouveau départ. Des idées claires.<br class="desktop-break"> Construisons quelque chose de grand, ensemble.</p>
+          <div class="starter-grid">
+            <button class="starter-card" data-prompt="Explique-moi simplement comment fonctionne l'intelligence artificielle."><span class="starter-icon">✦</span><span class="starter-title">M'expliquer un sujet</span><span class="starter-arrow">↗</span><span class="starter-text">Comprendre une idée complexe simplement.</span></button>
+            <button class="starter-card" data-prompt="Aide-moi à créer une petite page web en HTML et CSS."><span class="starter-icon">⌘</span><span class="starter-title">M'aider à coder</span><span class="starter-arrow">↗</span><span class="starter-text">Transformer une idée en projet concret.</span></button>
+            <button class="starter-card" data-prompt="Donne-moi trois idées originales pour un projet numérique."><span class="starter-icon">↗</span><span class="starter-title">Trouver des idées</span><span class="starter-arrow">↗</span><span class="starter-text">Explorer des possibilités et des projets.</span></button>
+            <button class="starter-card" data-prompt="Aide-moi à décomposer un problème difficile en étapes simples."><span class="starter-icon">∑</span><span class="starter-title">Résoudre un problème</span><span class="starter-arrow">↗</span><span class="starter-text">Avancer étape par étape, sans se perdre.</span></button>
+          </div>
+          <div class="prototype-note"><span>i</span><p><strong>Première version en construction.</strong> Le chat fonctionne en mode démo ; un véritable modèle IA reste à connecter.</p></div>
+        </div>
+        <div class="message-list" id="message-list" hidden></div>
+      </div>
+      <div class="composer-area">
+        <form class="composer" id="composer">
+          <textarea id="message-input" placeholder="Écris ton idée ici..." rows="1" aria-label="Votre message"></textarea>
+          <div class="composer-bottom"><span class="composer-hint"><span>↵</span> Entrée pour envoyer · Maj + Entrée pour une ligne</span><button class="send-button" type="submit" aria-label="Envoyer le message" disabled>↑</button></div>
+        </form>
+        <p class="disclaimer">Nexus IA peut se tromper. Vérifie les informations importantes.</p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
