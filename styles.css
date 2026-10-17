@@ -45,3 +45,11 @@ button:disabled{opacity:.55;cursor:not-allowed}
 /* V0.0.9: keyboard focus and reduced-motion accessibility */
 .history-item:focus-visible,.copy-button:focus-visible,.code-copy-button:focus-visible{outline:2px solid #a78bfa;outline-offset:2px}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+
+/* V0.1.1: visible search field in the conversation sidebar */
+.history-search{width:100%;min-width:0;margin:0 0 8px;padding:10px 11px;border:1px solid var(--line);border-radius:9px;background:#11141f;color:var(--text);font:inherit;font-size:11px;outline:none}
+.history-search::placeholder{color:#737a90}
+.history-search:focus{border-color:#a78bfa;box-shadow:0 0 0 2px #a78bfa20}
+.history-search::-webkit-search-cancel-button{cursor:pointer}
+@media(max-width:700px){.history-search{font-size:13px;padding:11px}}
