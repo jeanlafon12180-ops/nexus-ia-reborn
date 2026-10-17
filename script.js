@@ -5,7 +5,9 @@ const welcome = document.querySelector("#welcome");
 const messageList = document.querySelector("#message-list");
 const conversation = document.querySelector("#conversation");
 const sidebar = document.querySelector("#sidebar");
-const STORAGE_KEY = "nexus-ia-v003-messages";
+const STORAGE_KEY = "nexus-ia-v005-messages";
+const PREVIOUS_STORAGE_KEY = "nexus-ia-v003-messages";
+const V002_STORAGE_KEY = "nexus-ia-v002-messages";
 const PREVIOUS_STORAGE_KEY = "nexus-ia-v002-messages";
 const LEGACY_STORAGE_KEY = "nexus-ia-v001-messages";
 let messages = [];
@@ -168,8 +170,8 @@ async function sendMessage(value) {
 
   try {
     const history = messages
-      .filter((message) => message.role === "user" || message.role === "assistant")
-      .slice(-12)
+      .filter((message) => (message.role === "user" || message.role === "assistant") && message.mode !== "error")
+      .slice(-16)
       .map(({ role, content }) => ({ role, content }));
     const response = await fetch("/api/chat", {
       method: "POST",
@@ -211,7 +213,7 @@ function exportConversation() {
     return;
   }
   const content = messages.map((message) => (message.role === "user" ? "Vous" : "Nexus IA") + ":\n" + message.content).join("\n\n---\n\n");
-  const blob = new Blob(["Nexus IA V0.0.4 — Historique de conversation\n\n" + content], { type: "text/plain;charset=utf-8" });
+  const blob = new Blob(["Nexus IA V0.0.5 — Historique de conversation\n\n" + content], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -222,7 +224,7 @@ function exportConversation() {
 
 try {
   const current = localStorage.getItem(STORAGE_KEY);
-  const stored = JSON.parse(current || localStorage.getItem(LEGACY_STORAGE_KEY) || "[]");
+  const stored = JSON.parse(current || localStorage.getItem(PREVIOUS_STORAGE_KEY) || localStorage.getItem(V002_STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY) || "[]");
   if (Array.isArray(stored)) {
     messages = stored.filter((item) => item && (item.role === "user" || item.role === "assistant") && typeof item.content === "string");
   }
